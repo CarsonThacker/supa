@@ -1,0 +1,20 @@
+{
+  "name": "supa-scramjet-backend",
+  "version": "1.0.0",
+  "description": "Scramjet v0 proxy backend for Railway",
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {
+    "@mercuryworkshop/bare-mux": "^2.0.0",
+    "@mercuryworkshop/epoxy-transport": "^2.0.0",
+    "@mercuryworkshop/scramjet": "^1.0.0",
+    "@tomphttp/bare-server-node": "^2.0.0"
+  }
+}
