@@ -1,38 +1,55 @@
-import { createServer } from "node:http"
-import { createBareServer } from "@tomphttp/bare-server-node"
+import { createServer } from "node:http";
+import { ScramjetServer } from "@mercuryworkshop/scramjet/server";
+import { createBareServer } from "@tomphttp/bare-server-node";
+import { EpoxyTransport } from "@mercuryworkshop/epoxy-transport";
+import { BareMuxConnection } from "@mercuryworkshop/bare-mux/node";
 
-const bareServer = createBareServer("/bare/")
+const bareServer = createBareServer("/bare/");
+const scramjet = new ScramjetServer({
+  prefix: "/scramjet/",
+  transport: new EpoxyTransport({
+    conn: new BareMuxConnection(bareServer),
+  }),
+});
 
-const server = createServer()
+const server = createServer(async (req, res) => {
+  try {
+    // 1. Scramjet routing
+    if (scramjet.route(req)) {
+      return scramjet.fetch(req, res);
+    }
 
-server.on("request", (req, res) => {
-  // Handle Bare server requests
-  if (bareServer.shouldRoute(req)) {
-    return bareServer.routeRequest(req, res)
+    // 2. Bare server routing
+    if (bareServer.shouldRoute(req)) {
+      return bareServer.routeRequest(req, res);
+    }
+
+    // 3. Default response
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Scramjet v0 Backend Running on Railway");
+  } catch (err) {
+    console.error(err);
+    res.writeHead(500);
+    res.end("Internal Server Error");
   }
+});
 
-  // Default response
-  res.writeHead(200, {
-    "Content-Type": "text/plain",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "*",
-  })
-  res.end("Scramjet Bare Server Running - Supa Backend v1.0.0")
-})
-
+// WebSocket support
 server.on("upgrade", (req, socket, head) => {
-  // Handle WebSocket upgrades for Bare server
   if (bareServer.shouldRoute(req)) {
-    return bareServer.routeUpgrade(req, socket, head)
+    return bareServer.routeUpgrade(req, socket, head);
   }
-  socket.end()
-})
+  socket.end();
+});
 
-// Listen on Railway's PORT or fallback to 8080
-const PORT = process.env.PORT || 8080
+// Railway port binding
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`[Supa Backend] Scramjet Bare Server running on port ${PORT}`)
-  console.log(`[Supa Backend] Accessible at http://0.0.0.0:${PORT}`)
-  console.log(`[Supa Backend] Bare endpoint: /bare/`)
-})
+  console.log("────────────────────────────────────────");
+  console.log(` Scramjet v0 Backend Online`);
+  console.log(` Railway Port: ${PORT}`);
+  console.log(` Bare Endpoint: /bare/`);
+  console.log(` Scramjet Endpoint: /scramjet/`);
+  console.log("────────────────────────────────────────");
+});
+
